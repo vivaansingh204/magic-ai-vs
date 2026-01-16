@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppMode, Language, UserAccount, ChatSession, AccountSettings, VoiceSession, Note, ChatMessage } from './types.ts';
 import ChatInterface from './components/ChatInterface.tsx';
@@ -23,6 +24,12 @@ const TAGLINES = [
 const GLOBAL_LOC_KEY = 'magic_ai_last_location';
 const GLOBAL_TZ_KEY = 'magic_ai_last_timezone';
 
+/**
+ * FIX: Removed manual interface AIStudio and declare global { interface Window { aistudio: AIStudio; } }
+ * to resolve "identical modifiers" and "Subsequent property declarations must have the same type" errors.
+ * These types are already provided by the environment.
+ */
+
 const App: React.FC = () => {
   const [isLanding, setIsLanding] = useState(true);
   const [activeMode, setActiveMode] = useState<AppMode>(AppMode.CHAT);
@@ -32,8 +39,42 @@ const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [globalError, setGlobalError] = useState<{ message: string; type: 'quota' | 'general' | 'info' | 'success' | 'auth' } | null>(null);
+  const [hasApiKey, setHasApiKey] = useState(false);
 
-  // Router Logic: Sync state with Hash including nested IDs
+  // Check for API Key presence
+  useEffect(() => {
+    const checkKey = async () => {
+      // @ts-ignore - aistudio is injected by the environment
+      if (window.aistudio) {
+        // @ts-ignore
+        const linked = await window.aistudio.hasSelectedApiKey();
+        setHasApiKey(linked);
+      }
+    };
+    checkKey();
+    const interval = setInterval(checkKey, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleActivateKey = async () => {
+    // @ts-ignore
+    if (window.aistudio) {
+      try {
+        // @ts-ignore
+        await window.aistudio.openSelectKey();
+        // Assume success for best UX, the checkKey effect will confirm
+        setHasApiKey(true);
+        if (isLanding) {
+          setIsLanding(false);
+          window.location.hash = '#/chat';
+        }
+      } catch (err) {
+        setGlobalError({ message: "Link initiation failed. Please try again.", type: 'auth' });
+      }
+    }
+  };
+
+  // Router Logic
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#/', '');
@@ -55,7 +96,6 @@ const App: React.FC = () => {
 
     window.addEventListener('hashchange', handleHashChange);
     handleHashChange();
-
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [isLanding]);
 
@@ -88,8 +128,8 @@ const App: React.FC = () => {
     if (initialAccounts.length === 0) {
       initialAccounts = [{
         id: '1',
-        name: 'GUEST USER',
-        sessions: [{ id: 's1', title: 'NEW SESSION', messages: [], lastTimestamp: Date.now() }],
+        name: 'YOUNG PRODIGY',
+        sessions: [{ id: 's1', title: 'WELCOME SESSION', messages: [], lastTimestamp: Date.now() }],
         voiceSessions: [],
         notes: [],
         settings: { 
@@ -131,16 +171,16 @@ const App: React.FC = () => {
   const handleError = (err: any) => {
     const errStr = JSON.stringify(err).toLowerCase();
     const isQuota = errStr.includes('quota') || err.status === 429;
-    const isAuth = errStr.includes('api key') || errStr.includes('invalid') || err.status === 401 || err.status === 403;
+    const isAuth = errStr.includes('api key') || errStr.includes('invalid') || errStr.includes('not found') || err.status === 401 || err.status === 403;
 
     if (isAuth) {
-      setGlobalError({ message: "AUTH ERROR: Neural bridge authentication failed.", type: 'auth' });
+      setGlobalError({ message: "NEURAL LINK BROKEN: Please re-link your key to restore magic.", type: 'auth' });
       setTimeout(() => setGlobalError(null), 10000);
     } else if (isQuota) {
-      setGlobalError({ message: "RATE LIMIT: Engine cooling down.", type: 'quota' });
+      setGlobalError({ message: "ENERGY DEPLETED: Cooling down for 60s.", type: 'quota' });
       setTimeout(() => setGlobalError(null), 60000);
     } else {
-      setGlobalError({ message: "CONNECTION INTERRUPTED.", type: 'general' });
+      setGlobalError({ message: "LINK GLITCH: Connection interrupted.", type: 'general' });
       setTimeout(() => setGlobalError(null), 5000);
     }
   };
@@ -167,7 +207,7 @@ const App: React.FC = () => {
     const newAcc: UserAccount = {
       id: `acc-${Date.now()}`,
       name: name.toUpperCase(),
-      sessions: [{ id: `s-${Date.now()}`, title: 'INITIATING LINK...', messages: [], lastTimestamp: Date.now() }],
+      sessions: [{ id: `s-${Date.now()}`, title: 'NEW LINK...', messages: [], lastTimestamp: Date.now() }],
       voiceSessions: [],
       notes: [],
       settings: { language: 'English', theme: 'dark', voice: 'Vivaan', location: currentLoc, timezone: currentTZ }
@@ -193,7 +233,7 @@ const App: React.FC = () => {
       case AppMode.DRAW: return <SketchMaster account={account} />;
       case AppMode.NOTES: return <NotesInterface notes={account.notes} onUpdateNotes={handleUpdateNotes} activeNoteId={activeSubId} />;
       case AppMode.GAME: return <GameInterface account={account} />;
-      case AppMode.SETTINGS: return <SettingsInterface settings={account.settings} onUpdate={updateSettings} />;
+      case AppMode.SETTINGS: return <SettingsInterface settings={account.settings} onUpdate={updateSettings} onActivateKey={handleActivateKey} hasApiKey={hasApiKey} />;
       case AppMode.ACCOUNTS: return (
         <AccountInterface 
           accounts={accounts} 
@@ -207,7 +247,7 @@ const App: React.FC = () => {
     }
   };
 
-  if (isLanding) return <LandingPage onEnter={() => { setIsLanding(false); window.location.hash = '#/chat'; }} />;
+  if (isLanding) return <LandingPage onEnter={() => { setIsLanding(false); window.location.hash = '#/chat'; }} onActivateKey={handleActivateKey} hasApiKey={hasApiKey} />;
 
   return (
     <div className={`flex flex-col h-screen max-h-screen transition-colors duration-500 overflow-hidden ${account?.settings.theme === 'dark' ? 'bg-[#050510] text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
@@ -219,6 +259,9 @@ const App: React.FC = () => {
           globalError.type === 'auth' ? 'bg-orange-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {globalError.message}
+          {globalError.type === 'auth' && (
+             <button onClick={handleActivateKey} className="ml-4 underline font-black">RE-ACTIVATE NOW</button>
+          )}
         </div>
       )}
 
@@ -242,6 +285,9 @@ const App: React.FC = () => {
         </nav>
 
         <div className="flex items-center gap-3">
+          <div className={`hidden sm:flex px-3 py-1.5 rounded-full border text-[8px] font-black hero-font uppercase transition-all ${hasApiKey ? 'bg-lime-500/10 border-lime-500/50 text-lime-500' : 'bg-red-500/10 border-red-500/50 text-red-500 animate-pulse'}`}>
+             {hasApiKey ? 'NEURAL LINK: ACTIVE' : 'NEURAL LINK: OFFLINE'}
+          </div>
           <a href="#/settings" className={`w-12 h-12 flex items-center justify-center rounded-2xl border-2 transition-all active:scale-95 ${activeMode === AppMode.SETTINGS ? 'border-lime-500 bg-lime-500 text-black' : (account?.settings.theme === 'dark' ? 'border-white/10 text-slate-400 bg-white/5 hover:border-lime-500' : 'border-slate-200 text-slate-600 bg-white')}`}>⚙️</a>
         </div>
       </header>

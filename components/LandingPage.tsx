@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 interface LandingPageProps {
   onEnter: () => void;
+  onActivateKey: () => void;
+  hasApiKey: boolean;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onActivateKey, hasApiKey }) => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -23,16 +25,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
            <h1 className="text-2xl md:text-3xl font-black hero-font italic tracking-tighter">MAGIC <span className="text-lime-500">AI</span></h1>
         </div>
         <div className="hidden md:flex items-center gap-10">
-          <a href="#features" className="text-[10px] font-black hero-font uppercase tracking-widest hover:text-lime-500 transition-colors">Features</a>
-          <a href="#tech" className="text-[10px] font-black hero-font uppercase tracking-widest hover:text-lime-500 transition-colors">Intelligence</a>
-          <button 
-            onClick={onEnter}
-            className="px-8 py-3 bg-white text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:bg-lime-500 transition-all hover:scale-105 active:scale-95"
-          >
-            ENTER BRAIN
-          </button>
+          <a href="#features" className="text-[10px] font-black hero-font uppercase tracking-widest hover:text-lime-500 transition-colors">FEATURES</a>
+          <a href="#tech" className="text-[10px] font-black hero-font uppercase tracking-widest hover:text-lime-500 transition-colors">INTELLIGENCE</a>
+          {!hasApiKey ? (
+            <button 
+              onClick={onActivateKey}
+              className="px-8 py-3 bg-lime-500 text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:brightness-110 transition-all hover:scale-105 active:scale-95 animate-pulse"
+            >
+              ACTIVATE ENGINE ⚡
+            </button>
+          ) : (
+            <button 
+              onClick={onEnter}
+              className="px-8 py-3 bg-white text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:bg-lime-500 transition-all hover:scale-105 active:scale-95"
+            >
+              ENTER BRAIN
+            </button>
+          )}
         </div>
-        <button onClick={onEnter} className="md:hidden px-6 py-2 bg-lime-500 text-black font-black hero-font text-[10px] uppercase rounded-full">ENTER</button>
+        <button onClick={hasApiKey ? onEnter : onActivateKey} className="md:hidden px-6 py-2 bg-lime-500 text-black font-black hero-font text-[10px] uppercase rounded-full">
+           {hasApiKey ? 'ENTER' : 'ACTIVATE'}
+        </button>
       </nav>
 
       {/* Hero Section */}
@@ -44,23 +57,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
 
         <div className="relative z-10 space-y-8 max-w-5xl animate-in fade-in slide-in-from-bottom-12 duration-1000">
           <div className="inline-block px-4 py-2 bg-white/5 border border-white/10 rounded-full mb-4">
-             <span className="text-[9px] font-black hero-font uppercase tracking-[0.5em] text-lime-500">NEURAL CORE ACTIVE • LOCALIZED PROCESSING ONLY</span>
+             <span className="text-[9px] font-black hero-font uppercase tracking-[0.5em] text-lime-500">NEURAL CORE ACTIVE • GOOGLE SEARCH ENABLED</span>
           </div>
           <h1 className="text-6xl md:text-9xl font-black hero-font italic uppercase leading-none tracking-tighter">
-            INTELLIGENCE <br />
+            MAGIC <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-500 via-purple-500 to-blue-500">REIMAGINED.</span>
           </h1>
           <p className="text-lg md:text-2xl text-slate-400 font-bold max-w-2xl mx-auto leading-relaxed tracking-tight">
-            Mini Gemini architecture optimized for instant, high-precision results. Secure, private, and hyper-intelligent.
+            The world's fastest Mini Gemini architecture. Now with 1-click neural activation and full web-grounding.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-10">
-            <button 
-              onClick={onEnter}
-              className="w-full sm:w-auto px-16 py-8 bg-lime-500 text-black font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(162,255,0,0.3)] hover:scale-110 active:scale-95 transition-all"
-            >
-              LAUNCH INTERFACE ⚡
-            </button>
+            {!hasApiKey ? (
+              <button 
+                onClick={onActivateKey}
+                className="w-full sm:w-auto px-16 py-8 bg-lime-500 text-black font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(162,255,0,0.3)] hover:scale-110 active:scale-95 transition-all animate-bounce"
+              >
+                ACTIVATE NEURAL ENGINE ⚡
+              </button>
+            ) : (
+              <button 
+                onClick={onEnter}
+                className="w-full sm:w-auto px-16 py-8 bg-purple-600 text-white font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(157,0,255,0.3)] hover:scale-110 active:scale-95 transition-all"
+              >
+                LAUNCH INTERFACE 🚀
+              </button>
+            )}
           </div>
+          {!hasApiKey && (
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest animate-pulse mt-6">
+              Neural bridge requires a single project link. One click to begin.
+            </p>
+          )}
         </div>
 
         <div className="absolute bottom-10 left-10 hidden xl:flex flex-col gap-4 opacity-30 text-[8px] font-black hero-font uppercase tracking-widest text-slate-500">
@@ -79,7 +106,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard icon="💬" title="Hyper-Chat" desc="Deep reasoning with real-time Google search grounding for ultimate truth." color="border-blue-500/20" />
+            <FeatureCard icon="🔍" title="Web Grounding" desc="Ask anything. Magic AI searches Google in real-time to give you the truth." color="border-blue-500/20" />
             <FeatureCard icon="⚡" title="Visualizer" desc="Synthesize hyper-realistic 4K imagery from pure linguistic input." color="border-lime-500/20" />
             <FeatureCard icon="🎙️" title="Native Voice" desc="Zero-latency audio conversation with human-grade synth personas." color="border-purple-500/20" />
             <FeatureCard icon="🖌️" title="Sketch Master" desc="Transform crude doodles into professional art using neural composition." color="border-red-500/20" />
@@ -89,7 +116,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         </div>
       </section>
 
-      {/* Footer / Call to Action */}
+      {/* Footer */}
       <footer className="py-40 px-6 md:px-12 bg-black text-center relative overflow-hidden">
          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-lime-500 to-transparent"></div>
          <div className="max-w-4xl mx-auto space-y-12 relative z-10">
@@ -98,7 +125,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
               <span className="text-lime-500">EVOLVE?</span>
             </h2>
             <button 
-              onClick={onEnter}
+              onClick={hasApiKey ? onEnter : onActivateKey}
               className="px-20 py-10 bg-white text-black font-black hero-font text-2xl uppercase italic rounded-[4rem] hover:bg-lime-500 transition-all hover:scale-110 active:scale-95"
             >
               INITIALIZE NOW

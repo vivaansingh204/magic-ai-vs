@@ -27,9 +27,11 @@ const OPTIMIZE_LOGS = [
 interface SettingsInterfaceProps {
   settings: AccountSettings;
   onUpdate: (newSettings: AccountSettings) => void;
+  onActivateKey: () => void;
+  hasApiKey: boolean;
 }
 
-const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdate }) => {
+const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdate, onActivateKey, hasApiKey }) => {
   const [locInput, setLocInput] = useState(settings.location);
   const [isSynced, setIsSynced] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -91,6 +93,34 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdat
           </h2>
           <p className="text-sm md:text-base text-slate-500 font-bold uppercase tracking-[0.4em]">NEURAL CORE PARAMETERS</p>
         </div>
+
+        {/* NEURAL BRIDGE ACTIVATION */}
+        <section className={`p-8 rounded-[2.5rem] border-2 transition-all shadow-2xl ${hasApiKey ? 'bg-lime-500/5 border-lime-500/20' : 'bg-red-500/5 border-red-500/20 animate-pulse'}`}>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-3 text-center md:text-left">
+              <h3 className="text-xl font-black hero-font uppercase text-slate-900 dark:text-white flex items-center justify-center md:justify-start gap-3">
+                <span className="text-2xl">⚡</span>
+                NEURAL BRIDGE LINK
+              </h3>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                {hasApiKey 
+                  ? "SYSTEM AUTHENTICATED. YOU ARE CONNECTED TO THE GLOBAL INTELLIGENCE GRID." 
+                  : "SYSTEM OFFLINE. CLICK THE BUTTON TO INITIALIZE YOUR NEURAL ACCESS KEY."}
+              </p>
+            </div>
+            <button 
+              onClick={onActivateKey}
+              className={`px-10 py-5 font-black hero-font uppercase italic rounded-2xl transition-all shadow-lg min-w-[220px] ${hasApiKey ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white border-2 border-white/20 hover:scale-105' : 'bg-lime-500 text-black animate-bounce scale-110'}`}
+            >
+              {hasApiKey ? 'RE-SYNC LINK' : 'ACTIVATE ENGINE'}
+            </button>
+          </div>
+          <div className="mt-6 pt-6 border-t border-white/5">
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic text-center">
+              SYSTEM REQUIRES A VALID PAID API KEY FROM YOUR GOOGLE CLOUD PROJECT. <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">BILLING REQ.</a>
+            </p>
+          </div>
+        </section>
 
         <section className="p-8 bg-slate-100 dark:bg-white/5 rounded-[2.5rem] border-2 border-white/5 space-y-10">
           <div className="space-y-6">
@@ -192,7 +222,7 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdat
         <div className="pt-20 text-center space-y-4 opacity-50">
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-lime-500 to-transparent mx-auto mb-6"></div>
           <p className="hero-font font-black text-[14px] uppercase tracking-[1em] text-white">MAGIC AI</p>
-          <p className="text-[10px] font-black hero-font text-lime-500 uppercase tracking-[0.3em] animate-pulse">MADE BY VIVAAN SINGH</p>
+          <p className="text-[10px] font-black hero-font text-lime-500 uppercase tracking-[0.3em] animate-pulse">CREATED FOR THE NEXT GEN</p>
           <p className="text-[8px] font-bold text-slate-500 uppercase mt-2">Node ID: {localNodeId}</p>
         </div>
       </div>
