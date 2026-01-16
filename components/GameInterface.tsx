@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { UserAccount } from '../types.ts';
@@ -11,21 +12,38 @@ interface GameInterfaceProps {
 
 const GameInterface: React.FC<GameInterfaceProps> = ({ account }) => {
   const [activeGame, setActiveGame] = useState<GameType>('HUB');
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const fullHash = window.location.hash.replace('#/', '');
+      const parts = fullHash.split('/');
+      
+      if (parts[0] === 'game') {
+        const sub = parts[1]?.toUpperCase() as GameType;
+        setActiveGame(sub || 'HUB');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
   
   return (
     <div className="h-full w-full bg-[#050510] relative">
       {activeGame === 'HUB' ? (
-        <GameHub onSelect={setActiveGame} />
+        <GameHub />
       ) : activeGame === 'TIC_TAC_TOE' ? (
-        <TicTacToe onBack={() => setActiveGame('HUB')} />
+        <TicTacToe />
       ) : activeGame === 'HANGMAN' ? (
-        <Hangman onBack={() => setActiveGame('HUB')} />
+        <Hangman />
       ) : activeGame === 'CHESS' ? (
-        <ChessGame onBack={() => setActiveGame('HUB')} />
+        <ChessGame />
       ) : activeGame === 'QUIZ' ? (
-        <QuizInterface account={account} onBack={() => setActiveGame('HUB')} />
+        <QuizInterface account={account} onBack={() => window.location.hash = '#/game'} />
       ) : (
-        <GameHub onSelect={setActiveGame} />
+        <GameHub />
       )}
     </div>
   );
@@ -33,24 +51,24 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ account }) => {
 
 export default GameInterface;
 
-const GameHub: React.FC<{ onSelect: (g: GameType) => void }> = ({ onSelect }) => (
+const GameHub: React.FC = () => (
   <div className="p-8 md:p-20 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto h-full overflow-y-auto">
-    <GameCard title="Synaptic Quiz" icon="🧠" desc="Test your intelligence against AI generated challenges." onClick={() => onSelect('QUIZ')} />
-    <GameCard title="Tic-Tac-Toe" icon="❌" desc="Classic logic battle against the machine." onClick={() => onSelect('TIC_TAC_TOE')} />
-    <GameCard title="Neural Hangman" icon="🪢" desc="Predict the AI's linguistic patterns." onClick={() => onSelect('HANGMAN')} />
-    <GameCard title="Grandmaster Chess" icon="♟️" desc="Strategic warfare on the 8x8 grid." onClick={() => onSelect('CHESS')} />
+    <GameCard title="Synaptic Quiz" icon="🧠" desc="Test your intelligence against AI generated challenges." href="#/game/quiz" />
+    <GameCard title="Tic-Tac-Toe" icon="❌" desc="Classic logic battle against the machine." href="#/game/tic_tac_toe" />
+    <GameCard title="Neural Hangman" icon="🪢" desc="Predict the AI's linguistic patterns." href="#/game/hangman" />
+    <GameCard title="Grandmaster Chess" icon="♟️" desc="Strategic warfare on the 8x8 grid." href="#/game/chess" />
   </div>
 );
 
-const GameCard = ({ title, icon, desc, onClick }: any) => (
-  <button onClick={onClick} className="bg-white/5 border-2 border-white/5 p-10 rounded-[3rem] hover:border-lime-500 hover:bg-lime-500/5 transition-all text-left group">
+const GameCard = ({ title, icon, desc, href }: any) => (
+  <a href={href} className="bg-white/5 border-2 border-white/5 p-10 rounded-[3rem] hover:border-lime-500 hover:bg-lime-500/5 transition-all text-left group flex flex-col">
     <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">{icon}</div>
     <h3 className="text-3xl font-black hero-font italic text-white uppercase">{title}</h3>
     <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-[10px]">{desc}</p>
-  </button>
+  </a>
 );
 
-const TicTacToe: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const TicTacToe: React.FC = () => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [xIsNext, setXIsNext] = useState(true);
 
@@ -75,7 +93,7 @@ const TicTacToe: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 space-y-12 animate-in zoom-in">
-      <button onClick={onBack} className="absolute top-10 left-10 text-white/40 hover:text-white font-black uppercase text-xs">← BACK</button>
+      <a href="#/game" className="absolute top-10 left-10 text-white/40 hover:text-white font-black uppercase text-xs">← BACK</a>
       <h2 className="text-5xl font-black hero-font italic text-white">TIC TAC <span className="text-lime-500">TOE</span></h2>
       <div className="grid grid-cols-3 gap-4">
         {board.map((cell, i) => (
@@ -98,7 +116,7 @@ const TicTacToe: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   );
 };
 
-const Hangman: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const Hangman: React.FC = () => {
   const words = ["NEURAL", "SYNAPSE", "LATENT", "PHANTOM", "QUANTUM", "CYBER", "KINETIC", "VERTEX", "MATRIX", "VIRTUAL"];
   
   const initGame = () => {
@@ -135,7 +153,7 @@ const Hangman: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 space-y-12 animate-in zoom-in">
-      <button onClick={onBack} className="absolute top-10 left-10 text-white/40 hover:text-white font-black uppercase text-xs">← BACK</button>
+      <a href="#/game" className="absolute top-10 left-10 text-white/40 hover:text-white font-black uppercase text-xs">← BACK</a>
       <div className="text-center space-y-2">
         <h2 className="text-5xl font-black hero-font italic text-white">NEURAL <span className="text-lime-500">HANGMAN</span></h2>
         <p className="text-[10px] font-black text-lime-500/50 uppercase tracking-[0.4em]">SYSTEM HINT: 2 NEURONS PRE-CALIBRATED</p>
@@ -194,7 +212,7 @@ const Hangman: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   );
 };
 
-const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const ChessGame: React.FC = () => {
   const initialPieces = [
     ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
     ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
@@ -224,7 +242,6 @@ const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!piece) return false;
     if (fr === tr && fc === tc) return false;
 
-    // Check if capturing same color
     const isWhite = whitePieces.includes(piece);
     const isTargetWhite = target ? whitePieces.includes(target) : false;
     if (target && isWhite === isTargetWhite) return false;
@@ -232,19 +249,18 @@ const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const dr = tr - fr;
     const dc = tc - fc;
 
-    // Basic Piece Logic
     switch (piece) {
-      case '♙': // White Pawn
+      case '♙': 
         if (dc === 0 && dr === -1 && !target) return true;
         if (dc === 0 && dr === -2 && fr === 6 && !target && !currentBoard[5][fc]) return true;
         if (Math.abs(dc) === 1 && dr === -1 && target && !isTargetWhite) return true;
         return false;
-      case '♟': // Black Pawn
+      case '♟': 
         if (dc === 0 && dr === 1 && !target) return true;
         if (dc === 0 && dr === 2 && fr === 1 && !target && !currentBoard[2][fc]) return true;
         if (Math.abs(dc) === 1 && dr === 1 && target && isTargetWhite) return true;
         return false;
-      case '♖': case '♜': // Rook
+      case '♖': case '♜': 
         if (dr !== 0 && dc !== 0) return false;
         const rStep = dr === 0 ? 0 : dr / Math.abs(dr);
         const cStep = dc === 0 ? 0 : dc / Math.abs(dc);
@@ -254,7 +270,7 @@ const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           cr += rStep; cc += cStep;
         }
         return true;
-      case '♗': case '♝': // Bishop
+      case '♗': case '♝': 
         if (Math.abs(dr) !== Math.abs(dc)) return false;
         const brStep = dr / Math.abs(dr);
         const bcStep = dc / Math.abs(dc);
@@ -264,7 +280,7 @@ const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           bcr += brStep; bcc += bcStep;
         }
         return true;
-      case '♕': case '♛': // Queen
+      case '♕': case '♛': 
         if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return false;
         const qrStep = dr === 0 ? 0 : dr / Math.abs(dr);
         const qcStep = dc === 0 ? 0 : dc / Math.abs(dc);
@@ -274,9 +290,9 @@ const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           qcr += qrStep; qcc += qcStep;
         }
         return true;
-      case '♘': case '♞': // Knight
+      case '♘': case '♞': 
         return (Math.abs(dr) === 2 && Math.abs(dc) === 1) || (Math.abs(dr) === 1 && Math.abs(dc) === 2);
-      case '♔': case '♚': // King
+      case '♔': case '♚': 
         return Math.abs(dr) <= 1 && Math.abs(dc) <= 1;
       default:
         return false;
@@ -289,15 +305,7 @@ const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const boardStr = currentBoard.map(row => row.map(p => p || '.').join('')).join('\n');
       
-      const prompt = `You are an expert chess engine playing as Black (lower-case symbols or symbols like ♜).
-Current board:
-${boardStr}
-
-Rules:
-1. You must only play Black pieces: ♜, ♞, ♝, ♛, ♚, ♟.
-2. Output your move in JSON format: {"from": [row, col], "to": [row, col]}. 
-3. Ensure the move is legal.
-4. Rows and Columns are 0-7. Row 0 is at the top (Black side start), Row 7 is at the bottom (White side start).`;
+      const prompt = `Expert chess engine (Black). Board: ${boardStr}. Output move as JSON: {"from": [r, c], "to": [r, c]}. Rows 0-7.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -326,7 +334,6 @@ Rules:
         setLastMove([from as [number, number], to as [number, number]]);
         setTurn('w');
       } else {
-        // Fallback: Random legal move if AI fails or suggests illegal move
         makeRandomMove(currentBoard);
       }
     } catch (e) {
@@ -412,7 +419,7 @@ Rules:
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 space-y-6 animate-in zoom-in overflow-y-auto">
-      <button onClick={onBack} className="absolute top-10 left-10 text-white/40 hover:text-white font-black uppercase text-xs">← BACK</button>
+      <a href="#/game" className="absolute top-10 left-10 text-white/40 hover:text-white font-black uppercase text-xs">← BACK</a>
       
       <div className="text-center space-y-2">
         <h2 className="text-3xl md:text-5xl font-black hero-font italic text-white uppercase tracking-tighter">MAGIC <span className="text-lime-500">AI CHESS</span></h2>

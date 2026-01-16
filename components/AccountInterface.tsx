@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserAccount } from '../types';
 import { Icons } from '../constants';
@@ -85,12 +84,13 @@ const AccountInterface: React.FC<AccountInterfaceProps> = ({
 
                 <div className="flex gap-3 w-full pt-4">
                   {!isActive ? (
-                    <button 
+                    <a 
+                      href={`#/accounts/${acc.id}`}
                       onClick={() => onSelectAccount(acc.id)}
-                      className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-lime-500 hover:text-black hover:border-lime-500 transition-all active:scale-95"
+                      className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-lime-500 hover:text-black hover:border-lime-500 transition-all active:scale-95 text-center flex items-center justify-center"
                     >
                       Sync Link
-                    </button>
+                    </a>
                   ) : (
                     <div className="flex-1 py-4 bg-lime-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest text-center shadow-[0_0_20px_rgba(162,255,0,0.3)]">
                       Active
@@ -99,7 +99,7 @@ const AccountInterface: React.FC<AccountInterfaceProps> = ({
                   
                   {accounts.length > 1 && (
                     <button 
-                      onClick={() => onDeleteAccount(acc.id)}
+                      onClick={(e) => { e.preventDefault(); onDeleteAccount(acc.id); }}
                       className="p-4 bg-red-600/10 border border-red-600/20 text-red-500 rounded-2xl hover:bg-red-600 hover:text-white transition-all active:scale-90"
                       title="Delete Profile"
                     >

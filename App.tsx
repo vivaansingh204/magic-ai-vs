@@ -26,11 +26,38 @@ const GLOBAL_TZ_KEY = 'magic_ai_last_timezone';
 const App: React.FC = () => {
   const [isLanding, setIsLanding] = useState(true);
   const [activeMode, setActiveMode] = useState<AppMode>(AppMode.CHAT);
+  const [activeSubId, setActiveSubId] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [globalError, setGlobalError] = useState<{ message: string; type: 'quota' | 'general' | 'info' | 'success' | 'auth' } | null>(null);
+
+  // Router Logic: Sync state with Hash including nested IDs
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#/', '');
+      const parts = hash.split('/');
+      const primaryMode = parts[0] as AppMode;
+      const subId = parts[1] || null;
+      
+      if (Object.values(AppMode).includes(primaryMode)) {
+        setActiveMode(primaryMode);
+        setActiveSubId(subId);
+        setIsLanding(false);
+      } else if (!hash || hash === '') {
+        if (!isLanding) {
+          setActiveMode(AppMode.CHAT);
+          window.location.hash = '#/chat';
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [isLanding]);
 
   useEffect(() => {
     const saved = localStorage.getItem('magic_ai_profiles');
@@ -107,10 +134,10 @@ const App: React.FC = () => {
     const isAuth = errStr.includes('api key') || errStr.includes('invalid') || err.status === 401 || err.status === 403;
 
     if (isAuth) {
-      setGlobalError({ message: "AUTH ERROR: Invalid or missing API Key. Check Environment Variables.", type: 'auth' });
+      setGlobalError({ message: "AUTH ERROR: Neural bridge authentication failed.", type: 'auth' });
       setTimeout(() => setGlobalError(null), 10000);
     } else if (isQuota) {
-      setGlobalError({ message: "RATE LIMIT EXCEEDED: System cooling down.", type: 'quota' });
+      setGlobalError({ message: "RATE LIMIT: Engine cooling down.", type: 'quota' });
       setTimeout(() => setGlobalError(null), 60000);
     } else {
       setGlobalError({ message: "CONNECTION INTERRUPTED.", type: 'general' });
@@ -147,7 +174,7 @@ const App: React.FC = () => {
     };
     setAccounts(prev => [...prev, newAcc]);
     setCurrentId(newAcc.id);
-    setActiveMode(AppMode.CHAT);
+    window.location.hash = `#/accounts/${newAcc.id}`;
   };
 
   const handleDeleteAccount = (id: string) => {
@@ -161,26 +188,26 @@ const App: React.FC = () => {
     if (!account) return null;
     const props = { account, onError: handleError };
     switch (activeMode) {
-      case AppMode.VOICE: return <VoiceInterface account={account} onUpdateVoiceSessions={handleUpdateVoiceSessions} />;
+      case AppMode.VOICE: return <VoiceInterface account={account} onUpdateVoiceSessions={handleUpdateVoiceSessions} activeLogId={activeSubId} />;
       case AppMode.IMAGE_GEN: return <ImageGenerator />;
       case AppMode.DRAW: return <SketchMaster account={account} />;
-      case AppMode.NOTES: return <NotesInterface notes={account.notes} onUpdateNotes={handleUpdateNotes} />;
+      case AppMode.NOTES: return <NotesInterface notes={account.notes} onUpdateNotes={handleUpdateNotes} activeNoteId={activeSubId} />;
       case AppMode.GAME: return <GameInterface account={account} />;
       case AppMode.SETTINGS: return <SettingsInterface settings={account.settings} onUpdate={updateSettings} />;
       case AppMode.ACCOUNTS: return (
         <AccountInterface 
           accounts={accounts} 
           currentId={currentId} 
-          onSelectAccount={(id) => { setCurrentId(id); setActiveMode(AppMode.CHAT); }} 
+          onSelectAccount={(id) => { setCurrentId(id); window.location.hash = '#/chat'; }} 
           onAddAccount={handleAddAccount} 
           onDeleteAccount={handleDeleteAccount} 
         />
       );
-      default: return <ChatInterface {...props} onUpdateSessions={handleUpdateSessions} onUpdateNotes={handleUpdateNotes} />;
+      default: return <ChatInterface {...props} onUpdateSessions={handleUpdateSessions} onUpdateNotes={handleUpdateNotes} activeSessionId={activeSubId} />;
     }
   };
 
-  if (isLanding) return <LandingPage onEnter={() => setIsLanding(false)} />;
+  if (isLanding) return <LandingPage onEnter={() => { setIsLanding(false); window.location.hash = '#/chat'; }} />;
 
   return (
     <div className={`flex flex-col h-screen max-h-screen transition-colors duration-500 overflow-hidden ${account?.settings.theme === 'dark' ? 'bg-[#050510] text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
@@ -198,24 +225,24 @@ const App: React.FC = () => {
       <header className={`relative flex items-center justify-between px-4 md:px-8 py-4 border-b z-[500] transition-colors duration-500 ${account?.settings.theme === 'dark' ? 'bg-[#0a0a1a]/95 border-purple-500/10' : 'bg-white border-slate-200'}`}>
         <div className="flex items-center gap-4">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="xl:hidden p-2 rounded-xl bg-slate-100 dark:bg-white/5 transition-transform active:scale-90 text-xl">☰</button>
-          <div className="flex flex-col cursor-pointer" onClick={() => setIsLanding(true)}>
+          <a href="#/" onClick={() => setIsLanding(true)} className="flex flex-col cursor-pointer">
             <h1 className="text-2xl font-black hero-font italic tracking-tighter leading-none">MAGIC <span className="text-lime-500">AI</span></h1>
             <span className="text-[9px] hero-font font-bold text-slate-400 tracking-[0.3em] uppercase">{TAGLINES[taglineIndex]}</span>
-          </div>
+          </a>
         </div>
 
         <nav className={`hidden xl:flex items-center gap-1 p-1 rounded-2xl border ${account?.settings.theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
-          <NavButton active={activeMode === AppMode.CHAT} onClick={() => setActiveMode(AppMode.CHAT)} label="CHAT" icon="💬" isDark={account?.settings.theme === 'dark'} />
-          <NavButton active={activeMode === AppMode.IMAGE_GEN} onClick={() => setActiveMode(AppMode.IMAGE_GEN)} label="VISUALIZER" icon="⚡" isDark={account?.settings.theme === 'dark'} />
-          <NavButton active={activeMode === AppMode.DRAW} onClick={() => setActiveMode(AppMode.DRAW)} label="SKETCH" icon="🖌️" isDark={account?.settings.theme === 'dark'} />
-          <NavButton active={activeMode === AppMode.VOICE} onClick={() => setActiveMode(AppMode.VOICE)} label="VOICE" icon="🎙️" isDark={account?.settings.theme === 'dark'} />
-          <NavButton active={activeMode === AppMode.ACCOUNTS} onClick={() => setActiveMode(AppMode.ACCOUNTS)} label="PROFILES" icon="👤" isDark={account?.settings.theme === 'dark'} />
-          <NavButton active={activeMode === AppMode.GAME} onClick={() => setActiveMode(AppMode.GAME)} label="ARCADE" icon="🎮" isDark={account?.settings.theme === 'dark'} />
-          <NavButton active={activeMode === AppMode.NOTES} onClick={() => setActiveMode(AppMode.NOTES)} label="NOTES" icon="📓" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/chat" active={activeMode === AppMode.CHAT} label="CHAT" icon="💬" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/image_gen" active={activeMode === AppMode.IMAGE_GEN} label="VISUALIZER" icon="⚡" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/draw" active={activeMode === AppMode.DRAW} label="SKETCH" icon="🖌️" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/voice" active={activeMode === AppMode.VOICE} label="VOICE" icon="🎙️" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/accounts" active={activeMode === AppMode.ACCOUNTS} label="PROFILES" icon="👤" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/game" active={activeMode === AppMode.GAME} label="ARCADE" icon="🎮" isDark={account?.settings.theme === 'dark'} />
+          <NavLink href="#/notes" active={activeMode === AppMode.NOTES} label="NOTES" icon="📓" isDark={account?.settings.theme === 'dark'} />
         </nav>
 
         <div className="flex items-center gap-3">
-          <button onClick={() => setActiveMode(AppMode.SETTINGS)} className={`w-12 h-12 flex items-center justify-center rounded-2xl border-2 transition-all active:scale-95 ${activeMode === AppMode.SETTINGS ? 'border-lime-500 bg-lime-500 text-black' : (account?.settings.theme === 'dark' ? 'border-white/10 text-slate-400 bg-white/5 hover:border-lime-500' : 'border-slate-200 text-slate-600 bg-white')}`}>⚙️</button>
+          <a href="#/settings" className={`w-12 h-12 flex items-center justify-center rounded-2xl border-2 transition-all active:scale-95 ${activeMode === AppMode.SETTINGS ? 'border-lime-500 bg-lime-500 text-black' : (account?.settings.theme === 'dark' ? 'border-white/10 text-slate-400 bg-white/5 hover:border-lime-500' : 'border-slate-200 text-slate-600 bg-white')}`}>⚙️</a>
         </div>
       </header>
 
@@ -227,19 +254,19 @@ const App: React.FC = () => {
         </div>
         <div className="flex flex-col gap-2">
           {[
-            { id: AppMode.CHAT, label: 'CHAT', icon: '💬' },
-            { id: AppMode.IMAGE_GEN, label: 'VISUALIZER', icon: '⚡' },
-            { id: AppMode.DRAW, label: 'SKETCH', icon: '🖌️' },
-            { id: AppMode.VOICE, label: 'VOICE', icon: '🎙️' },
-            { id: AppMode.ACCOUNTS, label: 'PROFILES', icon: '👤' },
-            { id: AppMode.GAME, label: 'ARCADE', icon: '🎮' },
-            { id: AppMode.NOTES, label: 'NOTES', icon: '📓' },
-            { id: AppMode.SETTINGS, label: 'SETTINGS', icon: '⚙️' },
+            { id: AppMode.CHAT, label: 'CHAT', icon: '💬', href: '#/chat' },
+            { id: AppMode.IMAGE_GEN, label: 'VISUALIZER', icon: '⚡', href: '#/image_gen' },
+            { id: AppMode.DRAW, label: 'SKETCH', icon: '🖌️', href: '#/draw' },
+            { id: AppMode.VOICE, label: 'VOICE', icon: '🎙️', href: '#/voice' },
+            { id: AppMode.ACCOUNTS, label: 'PROFILES', icon: '👤', href: '#/accounts' },
+            { id: AppMode.GAME, label: 'ARCADE', icon: '🎮', href: '#/game' },
+            { id: AppMode.NOTES, label: 'NOTES', icon: '📓', href: '#/notes' },
+            { id: AppMode.SETTINGS, label: 'SETTINGS', icon: '⚙️', href: '#/settings' },
           ].map(item => (
-            <button key={item.id} onClick={() => { setActiveMode(item.id); setIsMobileMenuOpen(false); }} className={`flex flex-row items-center gap-4 p-4 rounded-2xl font-bold transition-all ${activeMode === item.id ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
+            <a key={item.id} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={`flex flex-row items-center gap-4 p-4 rounded-2xl font-bold transition-all ${activeMode === item.id ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
               <span className="text-2xl">{item.icon}</span>
               <span className="text-xs uppercase tracking-widest">{item.label}</span>
-            </button>
+            </a>
           ))}
         </div>
       </div>
@@ -249,11 +276,11 @@ const App: React.FC = () => {
   );
 };
 
-const NavButton = ({ active, onClick, label, icon, isDark }: any) => (
-  <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 min-w-[90px] ${active ? 'bg-purple-600 text-white shadow-lg scale-105' : (isDark ? 'text-slate-500 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-purple-600 hover:bg-slate-200')}`}>
+const NavLink = ({ active, href, label, icon, isDark }: any) => (
+  <a href={href} className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 min-w-[90px] ${active ? 'bg-purple-600 text-white shadow-lg scale-105' : (isDark ? 'text-slate-500 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-purple-600 hover:bg-slate-200')}`}>
     <span className="text-xl">{icon}</span>
     <span className="text-[9px] font-black uppercase tracking-widest leading-none">{label}</span>
-  </button>
+  </a>
 );
 
 export default App;

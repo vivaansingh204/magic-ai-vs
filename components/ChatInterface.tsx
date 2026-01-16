@@ -8,10 +8,11 @@ interface ChatInterfaceProps {
   onUpdateSessions: (sessions: ChatSession[]) => void;
   onUpdateNotes: (notes: Note[]) => void;
   onError?: (err: any) => void;
+  activeSessionId?: string | null;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ account, onUpdateSessions, onUpdateNotes, onError }) => {
-  const [activeSessionId, setActiveSessionId] = useState(account.sessions[0]?.id || '');
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ account, onUpdateSessions, onUpdateNotes, onError, activeSessionId: externalSessionId }) => {
+  const [internalSessionId, setInternalSessionId] = useState(externalSessionId || account.sessions[0]?.id || '');
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -28,7 +29,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ account, onUpdateSessions
   const bottomAnchorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const activeSession = account.sessions.find(s => s.id === activeSessionId) || account.sessions[0];
+  useEffect(() => {
+    if (externalSessionId) setInternalSessionId(externalSessionId);
+  }, [externalSessionId]);
+
+  const activeSession = account.sessions.find(s => s.id === internalSessionId) || account.sessions[0];
 
   useEffect(() => {
     const updateTime = () => {
@@ -57,12 +62,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ account, onUpdateSessions
     return () => clearInterval(interval);
   }, [account.settings.timezone]);
 
-  useEffect(() => {
-    if (account.sessions.length > 0 && !account.sessions.find(s => s.id === activeSessionId)) {
-      setActiveSessionId(account.sessions[0].id);
-    }
-  }, [account.sessions, activeSessionId]);
-
   const scrollToBottom = () => {
     window.requestAnimationFrame(() => {
       if (bottomAnchorRef.current) bottomAnchorRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
@@ -72,12 +71,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ account, onUpdateSessions
 
   useEffect(() => {
     scrollToBottom();
-  }, [streamedText, isGenerating, activeSessionId, activeSession?.messages.length]);
+  }, [streamedText, isGenerating, internalSessionId, activeSession?.messages.length]);
 
   const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+    e.preventDefault();
     e.stopPropagation();
     const filtered = account.sessions.filter(s => s.id !== sessionId);
     onUpdateSessions(filtered);
+    if (internalSessionId === sessionId && filtered.length > 0) {
+      window.location.hash = `#/chat/${filtered[0].id}`;
+    }
   };
 
   const handleDeleteMessage = (messageId: string) => {
@@ -162,19 +165,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ account, onUpdateSessions
     }
   };
 
+  const createNewSession = () => {
+    const newId = `s-${Date.now()}`;
+    onUpdateSessions([{ id: newId, title: 'NEW SESSION', messages: [], lastTimestamp: Date.now() }, ...account.sessions]);
+    window.location.hash = `#/chat/${newId}`;
+  };
+
   return (
     <div className="flex h-full w-full bg-[#050510] relative overflow-hidden flex-row font-sans selection:bg-lime-500 selection:text-black">
       <div className={`md:hidden fixed inset-0 bg-black/90 backdrop-blur-2xl z-[400] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)} />
       <div className={`fixed md:relative z-[410] h-full transition-all duration-300 ease-in-out border-r border-white/5 bg-[#0a0a20] flex flex-col overflow-hidden ${isSidebarOpen ? 'w-72 p-6' : 'w-0 md:w-0 p-0 overflow-hidden border-none'}`}>
         <div className="flex flex-col space-y-6 h-full min-w-[240px]">
-          <button onClick={() => { onUpdateSessions([{ id: `s-${Date.now()}`, title: 'NEW SESSION', messages: [], lastTimestamp: Date.now() }, ...account.sessions]); }} className="w-full py-5 bg-lime-500 text-black font-black hero-font text-[10px] uppercase italic rounded-2xl hover:brightness-110 active:scale-95 transition-all shadow-xl shrink-0">➕ NEW CHAT LINK</button>
+          <button onClick={createNewSession} className="w-full py-5 bg-lime-500 text-black font-black hero-font text-[10px] uppercase italic rounded-2xl hover:brightness-110 active:scale-95 transition-all shadow-xl shrink-0">➕ NEW CHAT LINK</button>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
             {account.sessions.map(session => (
               <div key={session.id} className="group relative">
-                <button onClick={() => { setActiveSessionId(session.id); if (window.innerWidth < 768) setIsSidebarOpen(false); }} className={`w-full p-4 pr-12 rounded-2xl text-left transition-all border-2 ${activeSessionId === session.id ? 'bg-purple-600 border-white text-white shadow-2xl scale-[1.02]' : 'bg-white/5 border-white/5 text-slate-400 hover:border-lime-500/50'}`}>
+                <a href={`#/chat/${session.id}`} onClick={() => { if (window.innerWidth < 768) setIsSidebarOpen(false); }} className={`block w-full p-4 pr-12 rounded-2xl text-left transition-all border-2 ${internalSessionId === session.id ? 'bg-purple-600 border-white text-white shadow-2xl scale-[1.02]' : 'bg-white/5 border-white/5 text-slate-400 hover:border-lime-500/50'}`}>
                   <div className="font-bold truncate text-[10px] uppercase tracking-widest leading-none">{session.title}</div>
                   <div className="text-[8px] opacity-40 uppercase mt-2 font-black">{new Date(session.lastTimestamp).toLocaleTimeString()}</div>
-                </button>
+                </a>
                 <button onClick={(e) => handleDeleteSession(e, session.id)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"><Icons.Trash /></button>
               </div>
             ))}

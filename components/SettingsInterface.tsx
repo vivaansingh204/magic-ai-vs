@@ -35,9 +35,6 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdat
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optStep, setOptStep] = useState(0);
 
-  // Diagnostic: Check if API KEY is present in the environment
-  const isApiLinked = !!process.env.API_KEY;
-
   useEffect(() => {
     setLocInput(settings.location);
   }, [settings.location]);
@@ -95,22 +92,6 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdat
           <p className="text-sm md:text-base text-slate-500 font-bold uppercase tracking-[0.4em]">NEURAL CORE PARAMETERS</p>
         </div>
 
-        {/* Neural Link Status Diagnostic */}
-        <section className={`p-6 rounded-3xl border-2 flex items-center justify-between transition-all ${isApiLinked ? 'bg-lime-500/10 border-lime-500/50' : 'bg-red-500/10 border-red-500/50 animate-pulse'}`}>
-          <div className="flex items-center gap-4">
-            <span className="text-3xl">{isApiLinked ? '✅' : '❌'}</span>
-            <div>
-              <h4 className="font-black hero-font text-[10px] uppercase tracking-widest dark:text-white">Neural Link Status</h4>
-              <p className={`text-[11px] font-bold uppercase ${isApiLinked ? 'text-lime-500' : 'text-red-500'}`}>
-                {isApiLinked ? 'BRIDGE ESTABLISHED: CORE SECURE' : 'LINK OFFLINE: NO API KEY DETECTED'}
-              </p>
-            </div>
-          </div>
-          {!isApiLinked && (
-            <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-red-600 text-white text-[9px] font-black hero-font uppercase rounded-xl hover:scale-105 transition-all">GET KEY</a>
-          )}
-        </section>
-
         <section className="p-8 bg-slate-100 dark:bg-white/5 rounded-[2.5rem] border-2 border-white/5 space-y-10">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
@@ -135,6 +116,7 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ settings, onUpdat
           </div>
 
           <div className="pt-10 border-t border-white/5 space-y-6">
+            <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Temporal Synchronization</label>
             <select 
               value={settings.timezone}
               onChange={(e) => onUpdate({ ...settings, timezone: e.target.value })}

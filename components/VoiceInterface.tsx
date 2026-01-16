@@ -6,6 +6,7 @@ import { UserAccount, VoiceSession } from '../types.ts';
 interface VoiceInterfaceProps {
   account: UserAccount;
   onUpdateVoiceSessions: (sessions: VoiceSession[]) => void;
+  activeLogId?: string | null;
 }
 
 type VoicePersona = 'Vivaan' | 'Suchita';
@@ -16,7 +17,7 @@ interface LogEntry {
   isTyped?: boolean;
 }
 
-const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ account, onUpdateVoiceSessions }) => {
+const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ account, onUpdateVoiceSessions, activeLogId }) => {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [currentLogs, setCurrentLogs] = useState<LogEntry[]>([]);
@@ -32,6 +33,18 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ account, onUpdateVoiceS
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const streamRef = useRef<MediaStream | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (activeLogId) {
+      const log = account.voiceSessions?.find(s => s.id === activeLogId);
+      if (log) {
+        setSelectedSession(log);
+        if (isActive) stopVoiceSession();
+      }
+    } else {
+      setSelectedSession(null);
+    }
+  }, [activeLogId, account.voiceSessions]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -77,7 +90,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ account, onUpdateVoiceS
 
   const startVoiceSession = async () => {
     if (isActive) { stopVoiceSession(); return; }
-    setSelectedSession(null);
+    window.location.hash = '#/voice';
     setIsConnecting(true);
     setError(null);
     setCurrentLogs([]);
@@ -227,14 +240,15 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ account, onUpdateVoiceS
             <div className="p-8 text-center opacity-20 hero-font text-[9px] uppercase italic">Memory Empty</div>
           ) : (
             account.voiceSessions?.map(session => (
-              <button 
+              <a 
                 key={session.id} 
-                onClick={() => { setSelectedSession(session); setIsSidebarOpen(false); if(isActive) stopVoiceSession(); }} 
-                className={`w-full p-4 rounded-2xl text-left transition-all border-2 ${selectedSession?.id === session.id ? 'bg-purple-600 border-white text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:border-lime-500/50'}`}
+                href={`#/voice/${session.id}`}
+                onClick={() => { setIsSidebarOpen(false); if(isActive) stopVoiceSession(); }} 
+                className={`block w-full p-4 rounded-2xl text-left transition-all border-2 ${selectedSession?.id === session.id ? 'bg-purple-600 border-white text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:border-lime-500/50'}`}
               >
                 <div className="font-bold truncate text-[10px] uppercase tracking-wider">{session.title}</div>
                 <div className="text-[8px] opacity-40 uppercase mt-1">{new Date(session.timestamp).toLocaleDateString()}</div>
-              </button>
+              </a>
             ))
           )}
         </div>
@@ -257,7 +271,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ account, onUpdateVoiceS
             <div className="max-w-4xl mx-auto w-full space-y-6 animate-in zoom-in duration-500">
                <div className="flex items-center justify-between">
                   <h2 className="text-xl font-black hero-font italic text-lime-500 uppercase">{selectedSession.title}</h2>
-                  <button onClick={() => setSelectedSession(null)} className="text-[9px] hero-font font-black px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 uppercase transition-colors">Close Log</button>
+                  <a href="#/voice" className="text-[9px] hero-font font-black px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 uppercase transition-colors flex items-center justify-center">Close Log</a>
                </div>
                <div className="space-y-6">
                   {selectedSession.transcript.split('\n').map((line, idx) => {
