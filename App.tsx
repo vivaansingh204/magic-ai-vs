@@ -24,12 +24,6 @@ const TAGLINES = [
 const GLOBAL_LOC_KEY = 'magic_ai_last_location';
 const GLOBAL_TZ_KEY = 'magic_ai_last_timezone';
 
-/**
- * FIX: Removed manual interface AIStudio and declare global { interface Window { aistudio: AIStudio; } }
- * to resolve "identical modifiers" and "Subsequent property declarations must have the same type" errors.
- * These types are already provided by the environment.
- */
-
 const App: React.FC = () => {
   const [isLanding, setIsLanding] = useState(true);
   const [activeMode, setActiveMode] = useState<AppMode>(AppMode.CHAT);
@@ -41,36 +35,51 @@ const App: React.FC = () => {
   const [globalError, setGlobalError] = useState<{ message: string; type: 'quota' | 'general' | 'info' | 'success' | 'auth' } | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
 
-  // Check for API Key presence
+  // Check for API Key presence with a more robust check
   useEffect(() => {
     const checkKey = async () => {
-      // @ts-ignore - aistudio is injected by the environment
-      if (window.aistudio) {
-        // @ts-ignore
-        const linked = await window.aistudio.hasSelectedApiKey();
-        setHasApiKey(linked);
+      // @ts-ignore
+      const aistudio = window.aistudio;
+      if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
+        try {
+          const linked = await aistudio.hasSelectedApiKey();
+          setHasApiKey(linked);
+        } catch (e) {
+          console.error("Link Check Error:", e);
+        }
       }
     };
     checkKey();
-    const interval = setInterval(checkKey, 3000);
+    const interval = setInterval(checkKey, 2000);
     return () => clearInterval(interval);
   }, []);
 
   const handleActivateKey = async () => {
     // @ts-ignore
-    if (window.aistudio) {
+    const aistudio = window.aistudio;
+    
+    if (aistudio && typeof aistudio.openSelectKey === 'function') {
       try {
-        // @ts-ignore
-        await window.aistudio.openSelectKey();
-        // Assume success for best UX, the checkKey effect will confirm
+        await aistudio.openSelectKey();
+        // Force state update to proceed immediately for best "magic" experience
         setHasApiKey(true);
         if (isLanding) {
           setIsLanding(false);
           window.location.hash = '#/chat';
         }
-      } catch (err) {
-        setGlobalError({ message: "Link initiation failed. Please try again.", type: 'auth' });
+        setGlobalError({ message: "MAGIC ENGINE ACTIVATED ⚡", type: 'success' });
+        setTimeout(() => setGlobalError(null), 3000);
+      } catch (err: any) {
+        console.error("Activation Error:", err);
+        setGlobalError({ message: "NEURAL BRIDGE FAILED: Try clicking again!", type: 'auth' });
       }
+    } else {
+      // If the bridge is missing, we give the user a clear hint
+      setGlobalError({ 
+        message: "BRIDGE OFFLINE: Please ensure you are running in a Magic-compatible environment.", 
+        type: 'general' 
+      });
+      setTimeout(() => setGlobalError(null), 5000);
     }
   };
 
@@ -174,13 +183,13 @@ const App: React.FC = () => {
     const isAuth = errStr.includes('api key') || errStr.includes('invalid') || errStr.includes('not found') || err.status === 401 || err.status === 403;
 
     if (isAuth) {
-      setGlobalError({ message: "NEURAL LINK BROKEN: Please re-link your key to restore magic.", type: 'auth' });
-      setTimeout(() => setGlobalError(null), 10000);
+      setHasApiKey(false); // Reset key state if it fails
+      setGlobalError({ message: "NEURAL LINK BROKEN: Please re-activate your engine.", type: 'auth' });
     } else if (isQuota) {
-      setGlobalError({ message: "ENERGY DEPLETED: Cooling down for 60s.", type: 'quota' });
+      setGlobalError({ message: "ENERGY DEPLETED: Engine cooling down (60s).", type: 'quota' });
       setTimeout(() => setGlobalError(null), 60000);
     } else {
-      setGlobalError({ message: "LINK GLITCH: Connection interrupted.", type: 'general' });
+      setGlobalError({ message: "CONNECTION INTERRUPTED.", type: 'general' });
       setTimeout(() => setGlobalError(null), 5000);
     }
   };
@@ -260,7 +269,7 @@ const App: React.FC = () => {
         }`}>
           {globalError.message}
           {globalError.type === 'auth' && (
-             <button onClick={handleActivateKey} className="ml-4 underline font-black">RE-ACTIVATE NOW</button>
+             <button onClick={handleActivateKey} className="ml-4 underline font-black">RE-ACTIVATE ENGINE</button>
           )}
         </div>
       )}

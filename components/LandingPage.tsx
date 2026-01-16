@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 
 interface LandingPageProps {
@@ -29,15 +30,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onActivateKey, hasAp
           <a href="#tech" className="text-[10px] font-black hero-font uppercase tracking-widest hover:text-lime-500 transition-colors">INTELLIGENCE</a>
           {!hasApiKey ? (
             <button 
-              onClick={onActivateKey}
-              className="px-8 py-3 bg-lime-500 text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:brightness-110 transition-all hover:scale-105 active:scale-95 animate-pulse"
+              onClick={(e) => { e.preventDefault(); onActivateKey(); }}
+              className="px-8 py-3 bg-lime-500 text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:brightness-110 transition-all hover:scale-105 active:scale-95 animate-pulse cursor-pointer"
             >
               ACTIVATE ENGINE ⚡
             </button>
           ) : (
             <button 
-              onClick={onEnter}
-              className="px-8 py-3 bg-white text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:bg-lime-500 transition-all hover:scale-105 active:scale-95"
+              onClick={(e) => { e.preventDefault(); onEnter(); }}
+              className="px-8 py-3 bg-white text-black font-black hero-font text-[10px] uppercase italic rounded-full hover:bg-lime-500 transition-all hover:scale-105 active:scale-95 cursor-pointer"
             >
               ENTER BRAIN
             </button>
@@ -69,15 +70,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onActivateKey, hasAp
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-10">
             {!hasApiKey ? (
               <button 
-                onClick={onActivateKey}
-                className="w-full sm:w-auto px-16 py-8 bg-lime-500 text-black font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(162,255,0,0.3)] hover:scale-110 active:scale-95 transition-all animate-bounce"
+                onClick={(e) => { e.preventDefault(); onActivateKey(); }}
+                className="w-full sm:w-auto px-16 py-8 bg-lime-500 text-black font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(162,255,0,0.3)] hover:scale-110 active:scale-95 transition-all animate-bounce cursor-pointer"
               >
                 ACTIVATE NEURAL ENGINE ⚡
               </button>
             ) : (
               <button 
-                onClick={onEnter}
-                className="w-full sm:w-auto px-16 py-8 bg-purple-600 text-white font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(157,0,255,0.3)] hover:scale-110 active:scale-95 transition-all"
+                onClick={(e) => { e.preventDefault(); onEnter(); }}
+                className="w-full sm:w-auto px-16 py-8 bg-purple-600 text-white font-black hero-font text-xl uppercase italic rounded-[3rem] shadow-[0_0_50px_rgba(157,0,255,0.3)] hover:scale-110 active:scale-95 transition-all cursor-pointer"
               >
                 LAUNCH INTERFACE 🚀
               </button>
@@ -126,7 +127,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onActivateKey, hasAp
             </h2>
             <button 
               onClick={hasApiKey ? onEnter : onActivateKey}
-              className="px-20 py-10 bg-white text-black font-black hero-font text-2xl uppercase italic rounded-[4rem] hover:bg-lime-500 transition-all hover:scale-110 active:scale-95"
+              className="px-20 py-10 bg-white text-black font-black hero-font text-2xl uppercase italic rounded-[4rem] hover:bg-lime-500 transition-all hover:scale-110 active:scale-95 cursor-pointer"
             >
               INITIALIZE NOW
             </button>
