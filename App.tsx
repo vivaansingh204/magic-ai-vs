@@ -9,7 +9,6 @@ import GameInterface from './components/GameInterface.tsx';
 import SettingsInterface from './components/SettingsInterface.tsx';
 import AccountInterface from './components/AccountInterface.tsx';
 import SketchMaster from './components/SketchMaster.tsx';
-import LandingPage from './components/LandingPage.tsx';
 
 const TAGLINES = [
   "NEURAL BRAIN: GOVERNING LOGIC ACTIVE",
@@ -25,7 +24,6 @@ const GLOBAL_LOC_KEY = 'magic_ai_last_location';
 const GLOBAL_TZ_KEY = 'magic_ai_last_timezone';
 
 const App: React.FC = () => {
-  const [isLanding, setIsLanding] = useState(true);
   const [activeMode, setActiveMode] = useState<AppMode>(AppMode.CHAT);
   const [activeSubId, setActiveSubId] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
@@ -61,12 +59,8 @@ const App: React.FC = () => {
     if (aistudio && typeof aistudio.openSelectKey === 'function') {
       try {
         await aistudio.openSelectKey();
-        // Force state update to proceed immediately for best "magic" experience
         setHasApiKey(true);
-        if (isLanding) {
-          setIsLanding(false);
-          window.location.hash = '#/chat';
-        }
+        window.location.hash = '#/chat';
         setGlobalError({ message: "MAGIC ENGINE ACTIVATED ⚡", type: 'success' });
         setTimeout(() => setGlobalError(null), 3000);
       } catch (err: any) {
@@ -74,7 +68,6 @@ const App: React.FC = () => {
         setGlobalError({ message: "NEURAL BRIDGE FAILED: Try clicking again!", type: 'auth' });
       }
     } else {
-      // If the bridge is missing, we give the user a clear hint
       setGlobalError({ 
         message: "BRIDGE OFFLINE: Please ensure you are running in a Magic-compatible environment.", 
         type: 'general' 
@@ -94,19 +87,16 @@ const App: React.FC = () => {
       if (Object.values(AppMode).includes(primaryMode)) {
         setActiveMode(primaryMode);
         setActiveSubId(subId);
-        setIsLanding(false);
       } else if (!hash || hash === '') {
-        if (!isLanding) {
-          setActiveMode(AppMode.CHAT);
-          window.location.hash = '#/chat';
-        }
+        setActiveMode(AppMode.CHAT);
+        window.location.hash = '#/chat';
       }
     };
 
     window.addEventListener('hashchange', handleHashChange);
     handleHashChange();
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [isLanding]);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('magic_ai_profiles');
@@ -183,7 +173,7 @@ const App: React.FC = () => {
     const isAuth = errStr.includes('api key') || errStr.includes('invalid') || errStr.includes('not found') || err.status === 401 || err.status === 403;
 
     if (isAuth) {
-      setHasApiKey(false); // Reset key state if it fails
+      setHasApiKey(false);
       setGlobalError({ message: "NEURAL LINK BROKEN: Please re-activate your engine.", type: 'auth' });
     } else if (isQuota) {
       setGlobalError({ message: "ENERGY DEPLETED: Engine cooling down (60s).", type: 'quota' });
@@ -256,8 +246,6 @@ const App: React.FC = () => {
     }
   };
 
-  if (isLanding) return <LandingPage onEnter={() => { setIsLanding(false); window.location.hash = '#/chat'; }} onActivateKey={handleActivateKey} hasApiKey={hasApiKey} />;
-
   return (
     <div className={`flex flex-col h-screen max-h-screen transition-colors duration-500 overflow-hidden ${account?.settings.theme === 'dark' ? 'bg-[#050510] text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
       {globalError && (
@@ -277,7 +265,7 @@ const App: React.FC = () => {
       <header className={`relative flex items-center justify-between px-4 md:px-8 py-4 border-b z-[500] transition-colors duration-500 ${account?.settings.theme === 'dark' ? 'bg-[#0a0a1a]/95 border-purple-500/10' : 'bg-white border-slate-200'}`}>
         <div className="flex items-center gap-4">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="xl:hidden p-2 rounded-xl bg-slate-100 dark:bg-white/5 transition-transform active:scale-90 text-xl">☰</button>
-          <a href="#/" onClick={() => setIsLanding(true)} className="flex flex-col cursor-pointer">
+          <a href="#/chat" className="flex flex-col cursor-pointer">
             <h1 className="text-2xl font-black hero-font italic tracking-tighter leading-none">MAGIC <span className="text-lime-500">AI</span></h1>
             <span className="text-[9px] hero-font font-bold text-slate-400 tracking-[0.3em] uppercase">{TAGLINES[taglineIndex]}</span>
           </a>
@@ -294,9 +282,12 @@ const App: React.FC = () => {
         </nav>
 
         <div className="flex items-center gap-3">
-          <div className={`hidden sm:flex px-3 py-1.5 rounded-full border text-[8px] font-black hero-font uppercase transition-all ${hasApiKey ? 'bg-lime-500/10 border-lime-500/50 text-lime-500' : 'bg-red-500/10 border-red-500/50 text-red-500 animate-pulse'}`}>
-             {hasApiKey ? 'NEURAL LINK: ACTIVE' : 'NEURAL LINK: OFFLINE'}
-          </div>
+          <button 
+            onClick={!hasApiKey ? handleActivateKey : undefined}
+            className={`hidden sm:flex px-3 py-1.5 rounded-full border text-[8px] font-black hero-font uppercase transition-all ${hasApiKey ? 'bg-lime-500/10 border-lime-500/50 text-lime-500 cursor-default' : 'bg-red-500/10 border-red-500/50 text-red-500 animate-pulse cursor-pointer hover:bg-red-600 hover:text-white hover:border-white'}`}
+          >
+             {hasApiKey ? 'NEURAL LINK: ACTIVE' : 'NEURAL LINK: OFFLINE (CLICK TO ACTIVATE)'}
+          </button>
           <a href="#/settings" className={`w-12 h-12 flex items-center justify-center rounded-2xl border-2 transition-all active:scale-95 ${activeMode === AppMode.SETTINGS ? 'border-lime-500 bg-lime-500 text-black' : (account?.settings.theme === 'dark' ? 'border-white/10 text-slate-400 bg-white/5 hover:border-lime-500' : 'border-slate-200 text-slate-600 bg-white')}`}>⚙️</a>
         </div>
       </header>
