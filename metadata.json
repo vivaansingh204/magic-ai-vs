@@ -1,0 +1,9 @@
+{
+  "name": "Magic AI vs",
+  "description": "Fast, detailed, and secure AI for everyone.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
